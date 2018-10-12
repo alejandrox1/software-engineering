@@ -1,9 +1,9 @@
 from django.conf.urls import url
 from rest_framework_mongoengine import routers as merouters
-from project.appname.views import ToolViewSet
+from project.appname.views import NoteViewSet
  
 merouter = merouters.DefaultRouter()
-merouter.register('mongo', ToolViewSet)
+merouter.register("", NoteViewSet)
  
 urlpatterns = [
  

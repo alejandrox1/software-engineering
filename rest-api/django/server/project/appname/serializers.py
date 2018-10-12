@@ -1,7 +1,7 @@
 from rest_framework_mongoengine import serializers
-from project.appname.models import Tool
+from project.appname.models import Note
  
 class ToolSerializer(serializers.DocumentSerializer):
     class Meta:
-        model = Tool
+        model = Note
         fields = '__all__'

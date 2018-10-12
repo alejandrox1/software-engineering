@@ -58,3 +58,31 @@ The flask app is contained all in one file.
 The [api script](./flask/server/api.py) will run our app and register the routes
 to be handled by the object `NotesAPI`, which in turn specifies the
 "controllers" by memeber functions.
+
+In flask, the data model is implicitly defined throughout the different request
+handlers (the `NotesAPI` methods `get`, `put`, `delete`, etc.).
+
+The routes are defined by a class, `NotesAPI` which handles all user requests.
+SO this class (or `flask_restful.Resouce`) corresponds to the view.
+
+The controller part of the api is also explicitly defined withint the request
+hanlders through the `mongo.db.notes` object.
+
+
+## Django
+
+With Django the Model-View-Controller pattern is a lot more ovbious.
+Django allows you to mess around with that part and does everything else ebhind
+the scenes for you.
+
+For this app you will need to create a model (describes what the data will look like),
+a serializer (tells the app how to convert data to a python object and vice
+versa), and a view (tells the app how to use the model and the serializer).
+
+Once you have this parts you are done.
+
+The thing with django is that it is extremely easy to set up, which is great.
+But it is orders of magnitude slower than other alternatives.
+As a matter of fact, django is pretty much the slowest thing you can build to
+serve request but there are a lot of ways to get around this - service
+replication, request caching, to name a few.
