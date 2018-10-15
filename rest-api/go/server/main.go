@@ -5,90 +5,79 @@ import (
 	"log"
 	"net/http"
 
-	"gopkg.in/mgo.v2/bson"
-
 	"github.com/gorilla/mux"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var config = Config{}
-var dao = MoviesDAO{}
+var dao = NotesDAO{}
 
-// GET list of movies
-func AllMoviesEndPoint(w http.ResponseWriter, r *http.Request) {
-	movies, err := dao.FindAll()
+// GET list of notes.
+func AllNotesHandler(w http.ResponseWriter, r *http.Request) {
+	notes, err := dao.FindAll()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusOK, movies)
+	respondWithJson(w, http.StatusOK, notes)
 }
 
-// GET a movie by its ID
-func FindMovieEndpoint(w http.ResponseWriter, r *http.Request) {
+// GET a note by its ID.
+func FindNoteHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	movie, err := dao.FindById(params["id"])
+	note, err := dao.FindById(params["id"])
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid Movie ID")
 		return
 	}
-	respondWithJson(w, http.StatusOK, movie)
+	respondWithJson(w, http.StatusOK, note)
 }
 
-// POST a new movie
-func CreateMovieEndPoint(w http.ResponseWriter, r *http.Request) {
+// POST a new note.
+func CreateNoteHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var movie Movie
-	if err := json.NewDecoder(r.Body).Decode(&movie); err != nil {
+	var note Note
+	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	movie.ID = bson.NewObjectId()
-	if err := dao.Insert(movie); err != nil {
+	note.ID = bson.NewObjectId()
+	if err := dao.Insert(note); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusCreated, movie)
+	respondWithJson(w, http.StatusCreated, note)
 }
 
-// PUT update an existing movie
-func UpdateMovieEndPoint(w http.ResponseWriter, r *http.Request) {
+// PUT update an existing note.
+func UpdateNoteHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var movie Movie
-	if err := json.NewDecoder(r.Body).Decode(&movie); err != nil {
+	var note Note
+	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	if err := dao.Update(movie); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
-}
 
-// DELETE an existing movie
-func DeleteMovieEndPoint(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	var movie Movie
-	if err := json.NewDecoder(r.Body).Decode(&movie); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
-		return
-	}
-	if err := dao.Delete(movie); err != nil {
+	params := mux.Vars(r)
+	note.ID = bson.ObjectIdHex(params["id"])
+	if err := dao.Update(note); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
-func respondWithError(w http.ResponseWriter, code int, msg string) {
-	respondWithJson(w, code, map[string]string{"error": msg})
-}
+// DELETE an existing note.
+func DeleteNoteHandler(w http.ResponseWriter, r *http.Request) {
+	var note Note
 
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
+	params := mux.Vars(r)
+	note.ID = bson.ObjectIdHex(params["id"])
+	if err := dao.Delete(note); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 // Parse the configuration file 'config.toml', and establish a connection to DB
@@ -98,4 +87,16 @@ func init() {
 	dao.Server = config.Server
 	dao.Database = config.Database
 	dao.Connect()
+}
+
+func main() {
+	r := mux.NewRouter()
+	r.HandleFunc("/notes", AllNotesHandler).Methods("GET")
+	r.HandleFunc("/notes", CreateNoteHandler).Methods("POST")
+	r.HandleFunc("/notes/{id}", UpdateNoteHandler).Methods("PUT")
+	r.HandleFunc("/notes/{id}", FindNoteHandler).Methods("GET")
+	r.HandleFunc("/notes/{id}", DeleteNoteHandler).Methods("DELETE")
+	if err := http.ListenAndServe(":3000", r); err != nil {
+		log.Fatal(err)
+	}
 }
